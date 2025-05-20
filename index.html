@@ -1,97 +1,126 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Compra de Equipos - JAIME</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TIENDA SARA - Visualizador de Stock</title>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .scroll-hint::after {
+      content: "↔ Desliza horizontalmente para ver más columnas";
+      display: block;
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+  </style>
 </head>
 <body class="bg-gray-100 text-gray-800 text-lg">
-  <div class="max-w-3xl mx-auto px-4 py-8">
-    <h1 class="text-4xl font-bold text-center mb-6">📦 COMPRA DE EQUIPOS JAIME</h1>
+  <div class="max-w-7xl mx-auto px-4 py-6">
+    <h1 class="text-4xl font-bold text-center mb-2">📱 TIENDA SARA</h1>
+    <p class="text-center text-2xl mb-4">Hola, ¿qué deseas buscar?</p>
 
-    <form id="purchaseForm" class="space-y-6">
-      <div>
-        <label class="block mb-1 font-semibold">📅 Fecha:</label>
-        <input type="date" name="fecha" id="fecha" class="w-full border border-gray-300 rounded p-3 text-lg" required>
-      </div>
-
-      <div>
-        <label class="block mb-1 font-semibold">🚚 Proveedor:</label>
-        <input type="text" name="proveedor" class="w-full border border-gray-300 rounded p-3 text-lg" required>
-      </div>
-
-      <div id="modelosContainer">
-        <label class="block mb-2 font-semibold">📱 Modelos comprados:</label>
-        <!-- Primer bloque de modelo -->
-        <div class="grid grid-cols-3 gap-2 mb-2">
-          <input type="number" name="cantidad[]" placeholder="Cantidad" class="border border-gray-300 rounded p-2" required>
-          <input type="text" name="modelo[]" placeholder="Modelo" class="border border-gray-300 rounded p-2" required>
-          <input type="number" name="precio[]" placeholder="Precio" class="border border-gray-300 rounded p-2" required>
-        </div>
-      </div>
-
-      <button type="button" onclick="agregarModelo()" class="text-blue-600 hover:underline text-lg">➕ He comprado más equipos</button>
-
-      <div>
-        <label class="block mb-1 font-semibold">💰 Monto total depositado al proveedor:</label>
-        <input type="number" name="monto" class="w-full border border-gray-300 rounded p-3 text-lg" required>
-      </div>
-
-      <div class="text-center">
-        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white text-2xl font-bold py-3 px-6 rounded-lg transition">ENVIAR</button>
-      </div>
-    </form>
-
-    <!-- Mensaje de éxito -->
-    <div id="successMessage" class="hidden mt-6 p-6 bg-green-100 text-green-800 text-xl rounded text-center font-semibold">
-      ✅ ¡Listo Jaime! Tus compras han sido registradas. Puedes ver tu lista de compras accediendo a la opción <strong>"MIS COMPRAS"</strong>.
-      <br><br>
-      <a href="index.html" class="inline-block mt-4 px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700">OK</a>
+    <!-- Botón Ver ventas -->
+    <div class="text-center mb-6">
+      <a href="ventas.html" class="inline-block bg-green-600 hover:bg-green-700 text-white text-xl font-semibold py-3 px-6 rounded-lg transition">
+        📊 Ver ventas
+      </a>
     </div>
+
+    <!-- Buscador y checkbox -->
+    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <input id="searchBox" type="text" placeholder="Buscar modelo, marca, precio..."
+             class="w-full sm:w-2/3 px-4 py-3 rounded-md border border-gray-300 shadow-sm text-base focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+
+      <label class="flex items-center gap-3 text-lg font-medium">
+        <input type="checkbox" id="showAll" class="w-5 h-5" />
+        Mostrar todos los equipos registrados (vendidos y traspasados)
+      </label>
+    </div>
+
+    <!-- Mensaje de deslizar -->
+    <div class="scroll-hint mb-2 text-center"></div>
+
+    <div id="table_div" class="bg-white p-4 rounded-md shadow-md overflow-x-auto"></div>
   </div>
 
   <script>
-    // Fecha automática de hoy
-    document.getElementById("fecha").valueAsDate = new Date();
+    google.charts.load('current', {'packages':['table']});
+    google.charts.setOnLoadCallback(drawTable);
 
-    // Función para agregar más campos de modelo
-    function agregarModelo() {
-      const container = document.getElementById("modelosContainer");
-      const block = document.createElement("div");
-      block.className = "grid grid-cols-3 gap-2 mb-2";
-      block.innerHTML = `
-        <input type="number" name="cantidad[]" placeholder="Cantidad" class="border border-gray-300 rounded p-2" required>
-        <input type="text" name="modelo[]" placeholder="Modelo" class="border border-gray-300 rounded p-2" required>
-        <input type="number" name="precio[]" placeholder="Precio" class="border border-gray-300 rounded p-2" required>
-      `;
-      container.appendChild(block);
+    let fullData;
+    let visibleIndexes = [];
+
+    function drawTable() {
+      const sheetID = '1eFuLouf7G23WM0dz_9L7R_YKaVko8xXwwwGwhth5usk'; // TIENDA SARA
+      const gid = '620876359';
+      const query = new google.visualization.Query(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?gid=${gid}`);
+      query.send(function(response) {
+        if (response.isError()) {
+          document.getElementById("table_div").innerHTML = "<p class='text-red-600'>Error cargando datos.</p>";
+          return;
+        }
+
+        fullData = response.getDataTable();
+
+        visibleIndexes = [];
+        for (let i = 0; i < fullData.getNumberOfColumns(); i++) {
+          if ([0, 13].includes(i)) continue; // omitir columna A (0) y N (13)
+          visibleIndexes.push(i);
+        }
+
+        renderFilteredTable();
+
+        document.getElementById("searchBox").addEventListener("input", renderFilteredTable);
+        document.getElementById("showAll").addEventListener("change", renderFilteredTable);
+      });
     }
 
-    // Envío del formulario
-    document.getElementById("purchaseForm").addEventListener("submit", function(e) {
-      e.preventDefault();
+    function renderFilteredTable() {
+      const searchTerm = document.getElementById("searchBox").value.toLowerCase();
+      const showAll = document.getElementById("showAll").checked;
 
-      const form = e.target;
-      const formData = new FormData(form);
+      const filtered = new google.visualization.DataTable();
 
-      fetch("https://script.google.com/macros/s/AKfycbxSfKV9OtRCMlM_oajPFenYNK-N2R3g2-x2MUhKPEEuAYRmgX8361Mj-aexM1MEOZgx/exec", {
-        method: "POST",
-        body: formData
-      })
-      .then(response => {
-        if (response.ok) {
-          form.classList.add("hidden");
-          document.getElementById("successMessage").classList.remove("hidden");
-        } else {
-          alert("Hubo un error al enviar. Intenta nuevamente.");
+      for (let i of visibleIndexes) {
+        filtered.addColumn(fullData.getColumnType(i), fullData.getColumnLabel(i));
+      }
+
+      for (let i = 0; i < fullData.getNumberOfRows(); i++) {
+        const stockValue = fullData.getValue(i, 13); // Columna N (stock oculto)
+        const isAvailable = stockValue === 1 || stockValue === "1" || stockValue === null || stockValue === "";
+
+        if (!showAll && !isAvailable) continue;
+
+        let include = !searchTerm;
+        let row = [];
+
+        for (let col of visibleIndexes) {
+          const cell = fullData.getValue(i, col);
+          row.push(cell);
+          if (cell && cell.toString().toLowerCase().includes(searchTerm)) {
+            include = true;
+          }
         }
-      })
-      .catch(error => {
-        console.error("Error:", error);
-        alert("Error de conexión al servidor.");
+
+        if (include) filtered.addRow(row);
+      }
+
+      const table = new google.visualization.Table(document.getElementById('table_div'));
+      table.draw(filtered, {
+        showRowNumber: false,
+        width: '100%',
+        height: '100%',
+        allowHtml: true,
+        cssClassNames: {
+          headerRow: 'bg-gray-100 text-gray-800 font-bold text-lg border border-gray-300',
+          tableCell: 'border border-gray-200 text-xl px-2 py-2'
+        }
       });
-    });
+    }
   </script>
 </body>
 </html>
+
