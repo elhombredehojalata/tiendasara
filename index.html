@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ANDRES TIENDA - Visualizador de Stock</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TIENDA SARA - Visualizador de Stock</title>
   <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -19,8 +19,8 @@
 </head>
 <body class="bg-gray-100 text-gray-800 text-lg">
   <div class="max-w-7xl mx-auto px-4 py-6">
-    <h1 class="text-4xl font-bold text-center mb-2">📱 ANDRES TIENDA</h1>
-    <p class="text-center text-2xl mb-4">Hola Andrés, ¿qué deseas buscar?</p>
+    <h1 class="text-4xl font-bold text-center mb-2">📱 TIENDA SARA</h1>
+    <p class="text-center text-2xl mb-4">Hola, ¿qué deseas buscar?</p>
 
     <!-- Botón Ver ventas -->
     <div class="text-center mb-6">
@@ -54,8 +54,8 @@
     let visibleIndexes = [];
 
     function drawTable() {
-      const sheetID = '1JcmZbeYB-DEsNL0oSF5H8JZfFx8WlAs1_eLlHctBBOw'; // ANDRES TIENDA
-      const gid = '1244671734';
+      const sheetID = '1eFuLouf7G23WM0dz_9L7R_YKaVko8xXwwwGwhth5usk'; // TIENDA SARA
+      const gid = '620876359';
       const query = new google.visualization.Query(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?gid=${gid}`);
       query.send(function(response) {
         if (response.isError()) {
@@ -65,10 +65,10 @@
 
         fullData = response.getDataTable();
 
-        // Determinar columnas visibles (excluir A [0], L [11])
+        // Determinar columnas visibles (excluir la columna A [0] y la columna N [13])
         visibleIndexes = [];
         for (let i = 0; i < fullData.getNumberOfColumns(); i++) {
-          if ([0, 11].includes(i)) continue;
+          if ([0, 13].includes(i)) continue;
           visibleIndexes.push(i);
         }
 
@@ -85,18 +85,14 @@
 
       const filtered = new google.visualization.DataTable();
 
-      // Agregar columnas visibles
       for (let i of visibleIndexes) {
         filtered.addColumn(fullData.getColumnType(i), fullData.getColumnLabel(i));
       }
 
       for (let i = 0; i < fullData.getNumberOfRows(); i++) {
-        const stockValue = fullData.getValue(i, 11); // Columna L
+        const stockValue = fullData.getValue(i, 13); // Columna N (stock oculto)
 
-        // Mostrar si está vacío, o contiene 1, o si se marca la casilla
-        const isDisponible = stockValue === null || stockValue === "" || stockValue === 1 || stockValue === "1";
-
-        if (!showAll && !isDisponible) continue;
+        if (!showAll && stockValue != "1" && stockValue !== 1 && stockValue !== "") continue;
 
         let include = !searchTerm;
         let row = [];
