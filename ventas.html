@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TIENDA SARA - Ventas</title>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 text-lg">
+  <div class="max-w-7xl mx-auto px-4 py-6">
+    <h1 class="text-4xl font-bold text-center mb-4">🧾 VENTAS - TIENDA SARA</h1>
+
+    <div class="text-center mb-6">
+      <a href="index.html" class="inline-block bg-blue-600 hover:bg-blue-700 text-white text-xl font-semibold py-3 px-6 rounded-lg transition">
+        🔙 Volver a stock
+      </a>
+    </div>
+
+    <div id="ventas_div" class="bg-white p-4 rounded-md shadow-md overflow-x-auto"></div>
+  </div>
+
+  <script>
+    google.charts.load('current', {'packages':['table']});
+    google.charts.setOnLoadCallback(drawVentas);
+
+    function drawVentas() {
+      const sheetID = '1KbS-iAcIuknJIatfuxgmzT7wbtnDukcpsIwvYmkiOC8';
+      const gid = '328049497';
+      const query = new google.visualization.Query(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?gid=${gid}`);
+      query.send(function(response) {
+        if (response.isError()) {
+          document.getElementById("ventas_div").innerHTML = "<p class='text-red-600'>Error cargando datos.</p>";
+          return;
+        }
+
+        const data = response.getDataTable();
+        const table = new google.visualization.Table(document.getElementById('ventas_div'));
+        table.draw(data, {
+          showRowNumber: false,
+          width: '100%',
+          height: '100%',
+          allowHtml: true,
+          cssClassNames: {
+            headerRow: 'bg-gray-100 text-gray-800 font-bold text-lg border border-gray-300',
+            tableCell: 'border border-gray-200 text-xl px-2 py-2'
+          }
+        });
+      });
+    }
+  </script>
+</body>
+</html>
